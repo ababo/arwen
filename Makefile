@@ -11,28 +11,37 @@ BUILD_SRC_DIR := $(BUILD_DIR)/src
 
 BUILD_STAMP := $(BUILD_DIR)/.stamp
 
-RUSTC := rustc
 RUSTC_FLAGS := --crate-type rlib --target $(TARGET)-unknown-linux-gnu \
-		-C opt-level=$(OPT_LEVEL) -C no-stack-check -Z no-landing-pads \
-        --cfg arch_$(TARGET) --sysroot /dev/null -L $(BUILD_SRC_DIR)
+	-C opt-level=$(OPT_LEVEL) -C no-stack-check -Z no-landing-pads \
+	--cfg arch_$(TARGET) --sysroot /dev/null -L $(BUILD_SRC_DIR)
 
-LIBR_CORE := $(SRC_DIR)/core/lib.rs
-SRCS_CORE := $(SRC_DIR)/core/*.rs
-RLIB_CORE := $(BUILD_SRC_DIR)/libcore.rlib
+define SRCS
+$(patsubst %, $(SRC_DIR)/$(strip $(1))/%, $(2))
+endef
 
-LIBR_KERNEL := $(SRC_DIR)/kernel/lib.rs
-SRCS_KERNEL := $(SRC_DIR)/kernel/*.rs
-RLIB_KERNEL := $(BUILD_SRC_DIR)/libkernel.rlib
+define RLIBS
+$(patsubst %, $(BUILD_SRC_DIR)/lib%.rlib, $(1))
+endef
+
+define ALIBS
+$(patsubst %, $(BUILD_SRC_DIR)/lib%.a, $(1))
+endef
+
+define BUILD_LIB
+$(call RLIBS, $(1)): $(BUILD_STAMP) $(call RLIBS, $(2)) $(call SRCS,$(1),$(3))
+	@echo Compiling $$@
+	@$(RUSTC) $(RUSTC_FLAGS) $(call SRCS, $(1), lib.rs) -o $$@
+$(call ALIBS, $(1)): $(call RLIBS, $(1))
+	@echo Creating $$@
+	@${OBJCOPY} $(call RLIBS, $(1)) $$@ 2> /dev/null
+endef
 
 .PHONY: all clean run
 
-$(BUILD_SRC_DIR)/kernel.rlib: $(BUILD_STAMP) $(RLIB_CORE) $(SRCS_KERNEL)
-	@echo Compiling $(RLIB_KERNEL)
-	@$(RUSTC) $(RUSTC_FLAGS) $(LIBR_KERNEL) -o $(RLIB_KERNEL)
+all: $(BUILD_SRC_DIR)/libkernel.a $(BUILD_SRC_DIR)/libcore.a
 
-$(BUILD_SRC_DIR)/libcore.rlib: $(BUILD_STAMP) $(SRCS_CORE)
-	@echo Compiling $(RLIB_CORE)
-	@$(RUSTC) $(RUSTC_FLAGS) $(LIBR_CORE) -o $(RLIB_CORE)
+$(eval $(call BUILD_LIB, core, , *.rs))
+$(eval $(call BUILD_LIB, kernel, core, *.rs $(TARGET)/*.rs))
 
 $(BUILD_STAMP):
 	@echo Creating $(BUILD_SRC_DIR)
