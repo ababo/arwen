@@ -6,8 +6,10 @@ include .config.mk
 
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SRC_DIR := $(ROOT_DIR)/src
+SRC_KERNEL_DIR := $(SRC_DIR)/kernel
 BUILD_DIR := $(ROOT_DIR)/build
 BUILD_SRC_DIR := $(BUILD_DIR)/src
+BUILD_KERNEL_DIR := $(BUILD_SRC_DIR)/kernel
 
 BUILD_STAMP := $(BUILD_DIR)/.stamp
 
@@ -27,13 +29,18 @@ define ALIBS
 $(patsubst %, $(BUILD_SRC_DIR)/lib%.a, $(1))
 endef
 
+define REL_PATHS
+$(patsubst $(ROOT_DIR)/%, %, $(1))
+endef
+
 define BUILD_LIB
-$(call RLIBS, $(1)): $(BUILD_STAMP) $(call RLIBS, $(2)) $(call SRCS,$(1),$(3))
-	@echo Compiling $$@
+$(call RLIBS, $(1)): $(BUILD_STAMP) \
+	$(call RLIBS, $(2)) $(call SRCS, $(1), $(3))
+	@echo Compiling $(call REL_PATHS, $(call RLIBS, $(1)))
 	@$(RUSTC) $(RUSTC_FLAGS) $(call SRCS, $(1), lib.rs) -o $$@
 $(call ALIBS, $(1)): $(call RLIBS, $(1))
-	@echo Creating $$@
-	@${OBJCOPY} $(call RLIBS, $(1)) $$@ 2> /dev/null
+	@echo Creating $(call REL_PATHS, $(call ALIBS, $(1)))
+	@${OBJCOPY} $$< $$@ 2> /dev/null
 endef
 
 .PHONY: all clean run
@@ -44,10 +51,10 @@ $(eval $(call BUILD_LIB, core, , *.rs))
 $(eval $(call BUILD_LIB, kernel, core, *.rs $(TARGET)/*.rs))
 
 $(BUILD_STAMP):
-	@echo Creating $(BUILD_SRC_DIR)
-	@mkdir -p $(BUILD_SRC_DIR)
+	@echo Creating $(call REL_PATHS, $(BUILD_KERNEL_DIR))
+	@mkdir -p $(BUILD_KERNEL_DIR)
 	@touch $(BUILD_STAMP)
 
 clean:
-	@echo Removing $(BUILD_DIR)
+	@echo Removing $(call REL_PATHS, $(BUILD_DIR))
 	@rm -rf $(BUILD_DIR)
