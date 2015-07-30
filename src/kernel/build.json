@@ -1,0 +1,4 @@
+{
+	"rustFiles": [ "lib.rs" ],
+    "subdirs": [ "arch" ]
+}

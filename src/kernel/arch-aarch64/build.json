@@ -1,0 +1,4 @@
+{
+    "asmFiles": [ "start.s" ],
+	"rustFiles": [ "mod.rs" ]
+}

@@ -1,0 +1,4 @@
+{
+	"rustFiles": [ "mod.rs" ],
+	"subdirs": [ "fmt" ]
+}
