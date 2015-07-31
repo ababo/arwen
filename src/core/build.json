@@ -1,4 +1,4 @@
 {
-	"rustFiles": [ "mod.rs" ],
+	"rustFiles": [ "lib.rs" ],
 	"subdirs": [ "fmt" ]
 }
