@@ -1,4 +1,5 @@
 {
 	"rustFiles": [ "lib.rs" ],
-    "subdirs": [ "arch" ]
+    "subdirs": [ "arch" ],
+    "dependencies": [ "core" ]
 }

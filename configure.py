@@ -84,10 +84,6 @@ def read_build_json(filename):
     with open(filename, 'r') as f:
         return json.loads(f.read())
 
-def find_extern_crates(filename):
-    with open(filename, 'r') as f:
-        return re.findall('extern\s+crate\s+(\w+)\s*;', f.read())
-
 def build_dir(path):
     relpath = os.path.relpath(path, ROOT_DIR)
     return os.path.join(BUILD_DIR, relpath)
@@ -110,18 +106,17 @@ def mod_target(name):
 class Module:
     def __init__(self, name):
         self.name = name
-        self.dependencies = \
-            map(lambda m: rlib_target(m),
-                find_extern_crates(os.path.join(self.path(), 'lib.rs')))
         self.asm_files = []
         self.rust_files =[]
+        self.dependencies = []
         self.build_dirs = []
-        self.find_all_files(self.path())
+        self.scan_dirs(self.path())
+        self.dependencies = list(set(self.dependencies))
 
     def path(self):
         return os.path.join(SRC_DIR, self.name)
 
-    def find_all_files(self, path):
+    def scan_dirs(self, path):
         data = read_build_json(os.path.join(path, 'build.json'))
         if 'asmFiles' in data:
             self.asm_files += map(
@@ -129,10 +124,13 @@ class Module:
         if 'rustFiles' in data:
             self.rust_files += map(
                 lambda f: os.path.join(path, f), data['rustFiles'])
+        if 'dependencies' in data:
+            self.dependencies += map(
+                lambda m: rlib_target(m), data['dependencies'])
         if 'subdirs' in data:
             for d in data['subdirs']:
                 if d == 'arch': d += '-' + args.target_arch
-                self.find_all_files(os.path.join(path, d))
+                self.scan_dirs(os.path.join(path, d))
         else:
             self.build_dirs.append(build_dir(path))
 
