@@ -1,3 +1,5 @@
+use core::prelude::*;
+
 // The magic field should contain this.
 pub const HEADER_MAGIC: u32 = 0x1BADB002;
 
@@ -30,9 +32,6 @@ pub struct Header {
     pub height: u32,
     pub depth: u32
 }
-
-#[lang="sync"]
-trait Sync {}
 
 impl Sync for Header {}
 

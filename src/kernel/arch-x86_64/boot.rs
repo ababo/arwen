@@ -1,4 +1,4 @@
-use x86_64::multiboot;
+use arch::multiboot;
 
 const HEADER_FLAGS: u32 = multiboot::HEADER_MEMORY_INFO;
 
