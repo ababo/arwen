@@ -1,4 +1,4 @@
 {
     "asmFiles": [ "start.s" ],
-	"rustFiles": [ "mod.rs" ]
+	"rustFiles": [ "mod.rs", "boot.rs", "multiboot.rs" ]
 }
