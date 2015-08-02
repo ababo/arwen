@@ -2,7 +2,6 @@ use arch::multiboot;
 
 const HEADER_FLAGS: u32 = multiboot::HEADER_MEMORY_INFO;
 
-#[link_section=".multiboot_header"]
 pub static MULTIBOOT_HEADER: multiboot::Header = multiboot::Header {
     magic: multiboot::HEADER_MAGIC,
     flags: HEADER_FLAGS,
@@ -23,5 +22,8 @@ pub extern fn __boot(magic: u32, _info: &multiboot::Info) {
     if magic != multiboot::BOOTLOADER_MAGIC {
         return
     }
-
+    unsafe {
+        let port = 0x400 as *const u16;
+        asm!("outb $0, $1" : : "{al}"('!' as u8), "{dx}"(*port));
+   }
 }

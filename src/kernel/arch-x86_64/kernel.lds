@@ -4,23 +4,19 @@ ENTRY(__start32)
 
 SECTIONS {
 	. = 1M;
-	.multiboot_header : {
-		*(.multiboot_header);
+	.kboot : {
+		*(.kboot);
 	}
-	.text : {
-		*(.text*);
-	}
-  	.rodata : {
-  		*(.rodata*);
-  	}
-  	.data : {
-		*(.data*);
-  	}
-	.bss : {
-		*(.bss*);
-		*(COMMON*);
-  	}
-	/DISCARD/ : {
-		*(*);
- 	}
+    .text : {
+        *(.text);
+    }
+    .rodata : {
+        *(.rodata);
+    }
+    .data : {
+        *(.data);
+    }
+    .bss : {
+        *(.bss);
+    }
 }
