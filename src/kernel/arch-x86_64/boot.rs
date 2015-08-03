@@ -22,8 +22,21 @@ pub extern fn __boot(magic: u32, _info: &multiboot::Info) {
     if magic != multiboot::BOOTLOADER_MAGIC {
         return
     }
+
+    #[derive(PartialEq, PartialOrd)]
+    enum Enum {
+        A,
+        B,
+    }
+
+    if Enum::A > Enum::B {
+
+    } else {
+
+    }
+
     unsafe {
         let port = 0x400 as *const u16;
         asm!("outb $0, $1" : : "{al}"('!' as u8), "{dx}"(*port));
-   }
+    }
 }

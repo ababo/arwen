@@ -1,8 +1,11 @@
 #![crate_name = "core"]
-#![feature(no_std, lang_items)]
+#![feature(intrinsics, lang_items, no_std)]
 #![no_std]
 
 pub mod cmp;
+pub mod fmt;
+pub mod intrinsics;
 pub mod marker;
 pub mod ops;
+pub mod option;
 pub mod prelude;

@@ -1,4 +1,6 @@
 {
-	"rustFiles": [ "lib.rs", "cmp.rs", "marker.rs", "ops.rs", "prelude.rs" ],
-	"subdirs": [ "fmt" ]
+	"rustFiles": [
+        "lib.rs", "prelude.rs", "cmp.rs", "marker.rs", "ops.rs",
+        "intrinsics.rs", "option.rs", "fmt.rs"
+    ]
 }
