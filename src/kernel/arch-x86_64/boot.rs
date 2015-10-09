@@ -1,4 +1,6 @@
 use arch::multiboot;
+use core::prelude::*;
+use klog;
 
 const HEADER_FLAGS: u32 = multiboot::HEADER_MEMORY_INFO;
 
@@ -17,26 +19,21 @@ pub static MULTIBOOT_HEADER: multiboot::Header = multiboot::Header {
     depth: 0
 };
 
+fn write(s: &str) {
+    let port = 0x400 as *const u16;
+    for b in s.chars() {
+        unsafe {
+            asm!("outb $0, $1" : : "{al}"(b as u8), "{dx}"(*port));
+        }
+    }
+}
+
 #[no_mangle]
 pub extern fn __boot(magic: u32, _info: &multiboot::Info) {
     if magic != multiboot::BOOTLOADER_MAGIC {
         return
     }
 
-    #[derive(PartialEq, PartialOrd)]
-    enum Enum {
-        A,
-        B,
-    }
-
-    if Enum::A > Enum::B {
-
-    } else {
-
-    }
-
-    unsafe {
-        let port = 0x400 as *const u16;
-        asm!("outb $0, $1" : : "{al}"('!' as u8), "{dx}"(*port));
-    }
+    klog::init(write, klog::Level::Debug);
+    klog_debug!("Hello {} {} {}!", "world", 123, "!!");
 }

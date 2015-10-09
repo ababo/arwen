@@ -33,7 +33,7 @@ pub struct Header {
     pub depth: u32
 }
 
-impl Sync for Header {}
+unsafe impl Sync for Header {}
 
 #[repr(C)]
 pub struct ElfSectionHeaderTable {

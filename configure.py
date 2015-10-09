@@ -12,43 +12,28 @@ ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 BUILD_DIR = os.path.join(ROOT_DIR, 'build')
 
-HOST_OS = platform.system();
-SUPPORTED_HOST_OSS = [ 'Darwin', 'Linux' ];
+SUPPORTED_ARCHS = [ 'x86_64', 'aarch64' ];
+DEFAULT_ARCH = 'x86_64'
 
-SUPPORTED_TARGET_ARCHS = [ 'x86_64', 'aarch64' ];
-DEFAULT_TARGET_ARCH = platform.machine() \
-    if platform.machine() in SUPPORTED_TARGET_ARCHS else 'x86_64'
+SUPPORTED_LEVELS = [ 0, 1, 2, 3 ]
+DEFAULT_LEVEL = 3
 
-SUPPORTED_OPT_LEVELS = [ 0, 1, 2, 3 ]
-DEFAULT_OPT_LEVEL = 3
+DEFAULT_INFIX = '-elf-'
 
-DEFAULT_BINUTILS_INFIXES = {
-    'Darwin': '-elf-', 'Linux': '-linux-gnu-'
-};
-DEFAULT_BINUTILS_INFIX = DEFAULT_BINUTILS_INFIXES[HOST_OS] \
-    if HOST_OS in DEFAULT_BINUTILS_INFIXES else ''
-
-parser = argparse.ArgumentParser(description='Configure Arwen OS build.')
-parser.add_argument('--arch', dest='target_arch', action='store',
-                    choices=SUPPORTED_TARGET_ARCHS,
-                    default=DEFAULT_TARGET_ARCH,
-                    help='target architecture (default: %s)'% \
-                        DEFAULT_TARGET_ARCH)
-parser.add_argument('--opt', dest='opt_level', action='store',
-                    type=int, choices=SUPPORTED_OPT_LEVELS,
-                    default=DEFAULT_OPT_LEVEL,
-                    help='optimization level (default: %d)'%DEFAULT_OPT_LEVEL)
-parser.add_argument('--pref', dest='binutils_prefix', action='store',
+parser = argparse.ArgumentParser(description='Arwen OS build configurer.')
+parser.add_argument('--arch', dest='arch', action='store',
+                    choices=SUPPORTED_ARCHS, default=DEFAULT_ARCH,
+                    help='target CPU architecture (default: %s)'%DEFAULT_ARCH)
+parser.add_argument('--level', dest='level', action='store',
+                    type=int, choices=SUPPORTED_LEVELS, default=DEFAULT_LEVEL,
+                    help='optimization level (default: %d)'%DEFAULT_LEVEL)
+parser.add_argument('--prefix', dest='prefix', action='store',
                     help='binutils prefix (default: <arch>%s)'% \
-                        DEFAULT_BINUTILS_INFIX)
+                        DEFAULT_INFIX)
 args = parser.parse_args()
 
-if not args.binutils_prefix:
-    args.binutils_prefix = args.target_arch + DEFAULT_BINUTILS_INFIX
-
-if HOST_OS not in SUPPORTED_HOST_OSS:
-    sys.stderr.write('error: unsupported host OS\n')
-    sys.exit(1)
+if not args.prefix:
+    args.prefix = args.arch + DEFAULT_INFIX
 
 def which(program):
     def is_exe(fpath):
@@ -75,15 +60,18 @@ def find_program(program):
     return filename
 
 rustc = find_program('rustc')
-objcopy = find_program(args.binutils_prefix+'objcopy')
-ar = find_program(args.binutils_prefix+'ar')
-gas = find_program(args.binutils_prefix+'as')
-ld = find_program(args.binutils_prefix+'ld')
-qemu = find_program('qemu-system-'+args.target_arch)
+objcopy = find_program(args.prefix+'objcopy')
+ar = find_program(args.prefix+'ar')
+gas = find_program(args.prefix+'as')
+ld = find_program(args.prefix+'ld')
+qemu = find_program('qemu-system-'+args.arch)
 
 def read_build_json(filename):
-    with open(filename, 'r') as f:
-        return json.loads(f.read())
+    try:
+        with open(filename, 'r') as f:
+            return json.loads(f.read())
+    except IOError:
+        return {}
 
 def build_dir(path):
     relpath = os.path.relpath(path, ROOT_DIR)
@@ -111,6 +99,7 @@ class Module:
         self.rust_files =[]
         self.dependencies = []
         self.build_dirs = []
+        self.rust_args = []
         self.scan_dirs(self.path())
         self.dependencies = list(set(self.dependencies))
 
@@ -128,9 +117,11 @@ class Module:
         if 'dependencies' in data:
             self.dependencies += map(
                 lambda m: rlib_target(m), data['dependencies'])
+        if 'rustArgs' in data:
+            self.rust_args += data['rustArgs']
         if 'subdirs' in data:
             for d in data['subdirs']:
-                if d == 'arch': d += '-' + args.target_arch
+                if d == 'arch': d += '-' + args.arch
                 self.scan_dirs(os.path.join(path, d))
         else:
             self.build_dirs.append(build_dir(path))
@@ -165,15 +156,17 @@ class Module:
         flags = ('--crate-type rlib --target %s-unknown-linux-gnu ' + \
             '-C opt-level=%d -C no-stack-check -Z no-landing-pads ' + \
             '--cfg arch_%s --sysroot /dev/null') % \
-            (args.target_arch, args.opt_level, args.target_arch)
+            (args.arch, args.level, args.arch)
 
         lib_path = ' -L ' + ' -L '.join(
             map(lambda d: os.path.dirname(d), self.dependencies)) \
             if self.dependencies else ''
 
+        extra_args = ' ' + ' '.join(self.rust_args) if self.rust_args else ''
+
         librs = os.path.join(self.path(), 'lib.rs')
-        makefile.write('\t@%s %s%s %s -o %s\n'% \
-            (rustc, flags, lib_path, librs, target))
+        makefile.write('\t@%s %s%s%s %s -o %s\n'% \
+            (rustc, flags, lib_path, extra_args, librs, target))
 
     def render_robj(self, makefile):
         source = rlib_target(self.name)
@@ -214,19 +207,18 @@ class Module:
 
 data = read_build_json(os.path.join(SRC_DIR, 'build.json'))
 kmodules = map(lambda n: Module(n), data['kernelModules'])
-kernel_target = os.path.join(build_dir(SRC_DIR), 'kernel', 'arwen.ki')
+kernel_target = os.path.join(build_dir(SRC_DIR), 'kernel', 'arwen.ker')
 
 def render_prolog(makefile):
     makefile.write('# Generated by configure.py, do not modify\n')
-    makefile.write('\n.PHONY: all\nall: arwen.ki\n')
+    makefile.write('\n.PHONY: all\nall: arwen.ker\n')
     makefile.write('\n.PHONY: clean\nclean:\n')
     makefile.write('\t@echo "Removing build dirs"\n')
     makefile.write('\t@rm -rf %s\n'%BUILD_DIR)
 
 def render_kernel(makefile):
     source = ' '.join(map(lambda m: mod_target(m.name), kmodules))
-    lds = os.path.join(SRC_DIR, 'kernel',
-        'arch-'+args.target_arch, 'kernel.lds')
+    lds = os.path.join(SRC_DIR, 'kernel', 'arch-'+args.arch, 'kernel.lds')
 
     makefile.write('\n# Kernel\n')
     makefile.write('\n%s: %s\n'%(kernel_target, source))
@@ -234,16 +226,20 @@ def render_kernel(makefile):
         prettify_target(kernel_target))
     makefile.write('\t@%s -nostdlib -z max-page-size=4096 -T %s %s -o %s\n'% \
         (ld, lds, source, kernel_target))
-    makefile.write('\n.PHONY: arwen.ki\narwen.ki: %s\n'%kernel_target)
+    makefile.write('\n.PHONY: arwen.ker\narwen.ker: %s\n'%kernel_target)
 
 def render_run(makefile):
     flags = ' -nographic'
-    if args.target_arch == 'aarch64':
+    if args.arch == 'aarch64':
         flags += ' -machine type=virt -cpu cortex-a57'
     makefile.write('\n# Run\n')
     makefile.write('\n.PHONY: run\nrun: %s\n'%kernel_target)
     makefile.write('\t@echo "Running QEMU (to exit press Ctrl-a x)"\n')
     makefile.write('\t@%s%s -kernel %s\n'%(qemu, flags, kernel_target))
+
+if os.path.exists(BUILD_DIR):
+    sys.stderr.write("error: build directory exists (run 'make clean')\n")
+    sys.exit(1)
 
 with open(os.path.join(ROOT_DIR, 'Makefile'), 'w') as f:
     render_prolog(f)

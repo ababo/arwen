@@ -2,7 +2,7 @@
 
 - Names should not be long, but self-descriptive. Longer name is always better than some cryptic abbreviation.
 - Prefer hyphens over underscores while naming files.
-- Last line of each text file should be empty.
+- Last line of each text file should be terminated by a line-feed.
 
 ### Rust coding style:
 
@@ -16,7 +16,6 @@
                      argument3: ArgType3) { ...
     ```
 
-### Documenting style:
+### Markdown style:
 
-- All documentation files should use *Markdown* syntax.
 - Paragraphs should be continuous without limitation in line width.

@@ -7,7 +7,7 @@
 	.global __halt
 
 	.bss
-	.align 16
+	.balign 16
 __boot_stack:
 	.fill BOOT_STACK_SIZE
 

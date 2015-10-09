@@ -34,7 +34,7 @@
 	.global __halt
 
 	.bss
-	.align 4096
+	.balign 4096
 __pml4:
 	.fill 512, 8
 __pdp0:
@@ -42,12 +42,12 @@ __pdp0:
 __pd0:
 	.fill 512, 8
 
-	.align 16
+	.balign 16
 __boot_stack:
 	.fill BOOT_STACK_SIZE
 
 	.data
-	.align 4
+	.balign 4
 __gdt:
 	.quad 0
 	.quad GDT_TYPE_CODE | GDT_NONSYS | GDT_PRESENT | GDT_BITS64

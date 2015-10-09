@@ -1,0 +1,3 @@
+[submodule "third-party/rust"]
+	path = third-party/rust
+	url = https://github.com/rust-lang/rust.git
