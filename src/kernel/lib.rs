@@ -1,9 +1,6 @@
 #![crate_name = "kernel"]
-#![feature(asm, core, core_prelude, no_std, lang_items, core_str_ext)]
+#![feature(asm, no_std, lang_items, core_str_ext)]
 #![no_std]
-
-//#[macro_use]
-//extern crate core;
 
 #[macro_use]
 pub mod klog;

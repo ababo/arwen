@@ -1,5 +1,4 @@
 use arch::multiboot;
-use core::prelude::*;
 use klog;
 
 const HEADER_FLAGS: u32 = multiboot::HEADER_MEMORY_INFO;

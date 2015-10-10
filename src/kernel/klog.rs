@@ -1,5 +1,4 @@
 use core::fmt;
-use core::prelude::*;
 
 #[derive(PartialEq, PartialOrd)]
 pub enum Level {
