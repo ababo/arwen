@@ -92,6 +92,9 @@ def sobj_target(name):
 def mod_target(name):
     return os.path.join(build_dir(SRC_DIR), name, '%s.mod'%name)
 
+def render(makefile, str):
+    makefile.write(str.replace(ROOT_DIR, '$(ROOT)'))
+
 class Module:
     def __init__(self, name):
         self.name = name
@@ -130,7 +133,7 @@ class Module:
         return os.path.join(build_dir(self.path()), '.build_dirs')
 
     def render(self, makefile):
-        makefile.write('# Module: %s\n'%self.name)
+        render(makefile, '# Module: %s\n'%self.name)
         self.render_build_dirs(makefile)
         self.render_rlib(makefile)
         self.render_robj(makefile)
@@ -139,19 +142,19 @@ class Module:
 
     def render_build_dirs(self, makefile):
         target = self.build_dirs_target()
-        makefile.write('\n%s:\n'%target)
-        makefile.write('\t@echo "Creating build dirs for \'%s\'"\n'%self.name)
-        makefile.write('\t@mkdir -p %s\n'%(' '.join(self.build_dirs)))
-        makefile.write('\t@touch %s\n'%target)
+        render(makefile, '\n%s:\n'%target)
+        render(makefile, '\t@echo Creating build dirs for \'%s\'\n'%self.name)
+        render(makefile, '\t@mkdir -p %s\n'%(' '.join(self.build_dirs)))
+        render(makefile, '\t@touch %s\n'%target)
 
     def render_rlib(self, makefile):
         target = rlib_target(self.name)
         rlibs = ' ' + ' '.join(self.dependencies) if self.dependencies else ''
         rfiles = ' ' + ' '.join(self.rust_files) if self.rust_files else ''
 
-        makefile.write('\n%s: %s%s%s\n'% \
+        render(makefile, '\n%s: %s%s%s\n'% \
             (target, self.build_dirs_target(), rlibs, rfiles))
-        makefile.write('\t@echo "Creating \'%s\'"\n'%prettify_target(target))
+        render(makefile, '\t@echo Creating \'%s\'\n'%prettify_target(target))
 
         flags = ('--crate-type rlib --target %s-unknown-linux-gnu ' + \
             '-C opt-level=%d -C no-stack-check -Z no-landing-pads ' + \
@@ -165,7 +168,7 @@ class Module:
         extra_args = ' ' + ' '.join(self.rust_args) if self.rust_args else ''
 
         librs = os.path.join(self.path(), 'lib.rs')
-        makefile.write('\t@%s %s%s%s %s -o %s\n'% \
+        render(makefile, '\t@%s %s%s%s %s -o %s\n'% \
             (rustc, flags, lib_path, extra_args, librs, target))
 
     def render_robj(self, makefile):
@@ -176,33 +179,33 @@ class Module:
         tmpobj = os.path.join(build_dir(SRC_DIR),
             self.name, 'lib%s.0.o'%self.name)
 
-        makefile.write('\n%s: %s\n'%(target, source))
-        makefile.write('\t@echo "Creating \'%s\'"\n'%prettify_target(target))
-        makefile.write('\t@%s %s %s 2> /dev/null\n'% \
+        render(makefile, '\n%s: %s\n'%(target, source))
+        render(makefile, '\t@echo Creating \'%s\'\n'%prettify_target(target))
+        render(makefile, '\t@%s %s %s 2> /dev/null\n'% \
             (objcopy, source, tmplib))
-        makefile.write('\t@cd %s && %s -x %s lib%s.0.o\n'% \
+        render(makefile, '\t@cd %s && %s -x %s lib%s.0.o\n'% \
             (build_dir(self.path()), ar, tmplib, self.name))
-        makefile.write('\t@mv %s %s\n'%(tmpobj, target))
-        makefile.write('\t@rm %s\n'%tmplib)
+        render(makefile, '\t@mv %s %s\n'%(tmpobj, target))
+        render(makefile, '\t@rm %s\n'%tmplib)
 
     def render_sobj(self, makefile):
         if not self.asm_files: return
         source = ' '.join(self.asm_files)
         target = sobj_target(self.name)
-        makefile.write('\n%s: %s %s\n'% \
+        render(makefile, '\n%s: %s %s\n'% \
             (target, self.build_dirs_target(), source))
-        makefile.write('\t@echo "Creating \'%s\'"\n'%prettify_target(target))
-        makefile.write('\t@%s %s -o %s\n'%(gas, source, target))
+        render(makefile, '\t@echo Creating \'%s\'\n'%prettify_target(target))
+        render(makefile, '\t@%s %s -o %s\n'%(gas, source, target))
 
     def render_mod(self, makefile):
         source = '%s %s'% (sobj_target(self.name), robj_target(self.name)) \
             if self.asm_files else robj_target(self.name)
         target = mod_target(self.name)
         lds = os.path.join(SRC_DIR, 'kernel', 'module.lds')
-        makefile.write('\n%s: %s\n'%(target, source))
-        makefile.write('\t@echo "Creating \'%s\'"\n'%prettify_target(target))
-        makefile.write('\t@%s -r -T %s %s -o %s\n'%(ld, lds, source, target))
-        makefile.write('\n.PHONY: %s.mod\n%s.mod: %s\n'% \
+        render(makefile, '\n%s: %s\n'%(target, source))
+        render(makefile, '\t@echo Creating \'%s\'\n'%prettify_target(target))
+        render(makefile, '\t@%s -r -T %s %s -o %s\n'%(ld, lds, source, target))
+        render(makefile, '\n.PHONY: %s.mod\n%s.mod: %s\n'% \
             (self.name, self.name, target))
 
 data = read_build_json(os.path.join(SRC_DIR, 'build.json'))
@@ -210,36 +213,34 @@ kmodules = map(lambda n: Module(n), data['kernelModules'])
 kernel_target = os.path.join(build_dir(SRC_DIR), 'kernel', 'arwen.ker')
 
 def render_prolog(makefile):
-    makefile.write('# Generated by configure.py, do not modify\n')
-    makefile.write('\n.PHONY: all\nall: arwen.ker\n')
-    makefile.write('\n.PHONY: clean\nclean:\n')
-    makefile.write('\t@echo "Removing build dirs"\n')
-    makefile.write('\t@rm -rf %s\n'%BUILD_DIR)
+    render(makefile, '# Generated by configure.py, do not modify\n')
+    render(makefile, '\nROOT := $(shell dirname $(realpath' +
+                   ' $(lastword $(MAKEFILE_LIST))))\n')
+    render(makefile, '\n.PHONY: all\nall: arwen.ker\n')
+    render(makefile, '\n.PHONY: clean\nclean:\n')
+    render(makefile, '\t@echo Removing build dirs\n')
+    render(makefile, '\t@rm -rf %s\n'%BUILD_DIR)
 
 def render_kernel(makefile):
     source = ' '.join(map(lambda m: mod_target(m.name), kmodules))
     lds = os.path.join(SRC_DIR, 'kernel', 'arch-'+args.arch, 'kernel.lds')
 
-    makefile.write('\n# Kernel\n')
-    makefile.write('\n%s: %s\n'%(kernel_target, source))
-    makefile.write('\t@echo "Creating \'%s\'"\n'% \
+    render(makefile, '\n# Kernel\n')
+    render(makefile, '\n%s: %s\n'%(kernel_target, source))
+    render(makefile, '\t@echo Creating \'%s\'\n'% \
         prettify_target(kernel_target))
-    makefile.write('\t@%s -nostdlib -z max-page-size=4096 -T %s %s -o %s\n'% \
-        (ld, lds, source, kernel_target))
-    makefile.write('\n.PHONY: arwen.ker\narwen.ker: %s\n'%kernel_target)
+    render(makefile, '\t@%s -nostdlib -z max-page-size=4096 -T %s %s -o %s\n' \
+        %(ld, lds, source, kernel_target))
+    render(makefile, '\n.PHONY: arwen.ker\narwen.ker: %s\n'%kernel_target)
 
 def render_run(makefile):
     flags = ' -nographic'
     if args.arch == 'aarch64':
         flags += ' -machine type=virt -cpu cortex-a57'
-    makefile.write('\n# Run\n')
-    makefile.write('\n.PHONY: run\nrun: %s\n'%kernel_target)
-    makefile.write('\t@echo "Running QEMU (to exit press Ctrl-a x)"\n')
-    makefile.write('\t@%s%s -kernel %s\n'%(qemu, flags, kernel_target))
-
-if os.path.exists(BUILD_DIR):
-    sys.stderr.write("error: build directory exists (run 'make clean')\n")
-    sys.exit(1)
+    render(makefile, '\n# Run\n')
+    render(makefile, '\n.PHONY: run\nrun: %s\n'%kernel_target)
+    render(makefile, '\t@echo "Running QEMU (to exit press Ctrl-a x)"\n')
+    render(makefile, '\t@%s%s -kernel %s\n'%(qemu, flags, kernel_target))
 
 with open(os.path.join(ROOT_DIR, 'Makefile'), 'w') as f:
     render_prolog(f)

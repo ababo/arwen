@@ -1,5 +1,5 @@
 #![crate_name = "kernel"]
-#![feature(asm, no_std, lang_items, core_str_ext)]
+#![feature(asm, no_std, lang_items)]
 #![no_std]
 
 #[macro_use]
