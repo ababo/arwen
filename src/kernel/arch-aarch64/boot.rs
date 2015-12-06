@@ -1,3 +1,4 @@
+use arch::device_tree;
 use klog;
 
 fn write(s: &str) {
@@ -9,8 +10,11 @@ fn write(s: &str) {
     }
 }
 
+const DEVICE_TREE_PTR: usize = 0x4000_0000;
+
 #[no_mangle]
 pub extern fn __boot() {
 	klog::init(write, klog::Level::Debug);
-    klog_debug!("Hello {} {} {}!", "world", 123, "!!");
+	device_tree::init(DEVICE_TREE_PTR);
+    klog_debug!("ok");
 }

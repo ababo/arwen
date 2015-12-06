@@ -27,7 +27,7 @@ macro_rules! dummy_syms {
     ($($sym:ident)*) => ($(
         #[no_mangle]
         #[allow(non_upper_case_globals)]
-        pub static $sym: isize = 0;
+        pub static $sym: usize = 0;
     )*)
 }
 

@@ -1,14 +1,14 @@
 // The magic field should contain this.
-pub const HEADER_MAGIC: u32 = 0x1BADB002;
+const HEADER_MAGIC: u32 = 0x1BADB002;
 
 // Must pass memory information to OS.
-pub const HEADER_MEMORY_INFO: u32 = 0x00000002;
+const HEADER_MEMORY_INFO: u32 = 0x00000002;
 
 // This should be in %eax.
-pub const BOOTLOADER_MAGIC: u32 = 0x2BADB002;
+const BOOTLOADER_MAGIC: u32 = 0x2BADB002;
 
 #[repr(C)]
-pub struct Header {
+struct Header {
     // Must be MAGIC - see above.
     pub magic: u32,
     // Feature flags.
@@ -34,7 +34,7 @@ pub struct Header {
 unsafe impl Sync for Header {}
 
 #[repr(C)]
-pub struct ElfSectionHeaderTable {
+struct ElfSectionHeaderTable {
     pub num : u32,
     pub size : u32,
     pub addr : u32,
@@ -42,7 +42,7 @@ pub struct ElfSectionHeaderTable {
 }
 
 #[repr(C)]
-pub struct Info {
+struct Info {
     // Multiboot info version number
     pub flags: u32,
 
@@ -87,4 +87,27 @@ pub struct Info {
     pub vbe_interface_seg: u16,
     pub vbe_interface_off: u16,
     pub vbe_interface_len: u16,
+}
+
+const HEADER_FLAGS: u32 = HEADER_MEMORY_INFO;
+
+#[linkage="external"]
+#[link_section= ".header"]
+static MULTIBOOT_HEADER: Header = Header {
+    magic: HEADER_MAGIC,
+    flags: HEADER_FLAGS,
+    checksum: (-((HEADER_MAGIC + HEADER_FLAGS) as i32) as u32),
+    header_addr: 0,
+    load_addr: 0,
+    load_end_addr: 0,
+    bss_end_addr: 0,
+    entry_addr: 0,
+    mode_type: 0,
+    width: 0,
+    height: 0,
+    depth: 0
+};
+
+pub fn init(magic: u32, info_ptr: usize) {
+
 }

@@ -1,5 +1,5 @@
 #![crate_name = "kernel"]
-#![feature(asm, no_std, lang_items)]
+#![feature(asm, no_std, lang_items, linkage)]
 #![no_std]
 
 #[macro_use]
@@ -12,11 +12,16 @@ pub mod arch;
 #[path = "arch-aarch64/mod.rs"]
 pub mod arch;
 
+pub mod config;
 pub mod libc;
+pub mod memory;
 
 #[no_mangle]
 #[lang = "begin_unwind"]
-pub extern fn rust_begin_unwind(_: &core::fmt::Arguments,
-                                _: &'static str, _: usize) -> ! {
-    loop {}
+pub extern fn rust_begin_unwind(args: &core::fmt::Arguments,
+                                file: &'static str, line: usize) -> ! {
+	klog::log(klog::Level::Fatal,
+		format_args!("panic: {} ({}:{})", args, file, line));
+	extern { fn __halt() -> !; }
+    unsafe { __halt(); }
 }

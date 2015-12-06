@@ -1,6 +1,6 @@
 SECTIONS {
-    .kboot : {
-        *(.rodata.*arch*boot*);
+    .header : {
+        *(.header);
     }
     .text : {
         *(.text*);

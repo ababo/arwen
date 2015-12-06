@@ -1,5 +1,5 @@
 {
-	"rustFiles": [ "lib.rs", "libc.rs", "klog.rs" ],
+	"rustFiles": [ "lib.rs", "libc.rs", "klog.rs", "config.rs", "memory.rs" ],
     "subdirs": [ "arch" ],
     "dependencies": [ "core" ]
 }

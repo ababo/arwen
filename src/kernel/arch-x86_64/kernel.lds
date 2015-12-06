@@ -4,8 +4,8 @@ ENTRY(__start32)
 
 SECTIONS {
 	. = 1M;
-	.kboot : {
-		*(.kboot);
+	.header : {
+		*(.header);
 	}
     .text : {
         *(.text);

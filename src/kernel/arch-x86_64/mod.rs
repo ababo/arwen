@@ -1,2 +1,2 @@
-pub mod boot;
+mod boot;
 mod multiboot;
