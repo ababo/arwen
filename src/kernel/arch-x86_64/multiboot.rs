@@ -10,83 +10,83 @@ const BOOTLOADER_MAGIC: u32 = 0x2BADB002;
 #[repr(C)]
 struct Header {
     // Must be MAGIC - see above.
-    pub magic: u32,
+    magic: u32,
     // Feature flags.
-    pub flags: u32,
+    flags: u32,
 
     // The above fields plus this one must equal 0 mod 2^32.
-    pub checksum: u32,
+    checksum: u32,
 
     // These are only valid if AOUT_KLUDGE is set.
-    pub header_addr: u32,
-    pub load_addr: u32,
-    pub load_end_addr: u32,
-    pub bss_end_addr: u32,
-    pub entry_addr: u32,
+    header_addr: u32,
+    load_addr: u32,
+    load_end_addr: u32,
+    bss_end_addr: u32,
+    entry_addr: u32,
 
     // These are only valid if VIDEO_MODE is set.
-    pub mode_type: u32,
-    pub width: u32,
-    pub height: u32,
-    pub depth: u32
+    mode_type: u32,
+    width: u32,
+    height: u32,
+    depth: u32
 }
 
 unsafe impl Sync for Header {}
 
 #[repr(C)]
 struct ElfSectionHeaderTable {
-    pub num : u32,
-    pub size : u32,
-    pub addr : u32,
-    pub shndx : u32,
+    num : u32,
+    size : u32,
+    addr : u32,
+    shndx : u32,
 }
 
 #[repr(C)]
 struct Info {
     // Multiboot info version number
-    pub flags: u32,
+    flags: u32,
 
     // Available memory from BIOS
-    pub mem_lower: u32,
-    pub mem_upper: u32,
+    mem_lower: u32,
+    mem_upper: u32,
 
     // "root" partition
-    pub boot_device: u32,
+    boot_device: u32,
 
     // Kernel command line
-    pub cmdline: u32,
+    cmdline: u32,
 
     // Boot-Module list
-    pub mods_count: u32,
-    pub mods_addr: u32,
+    mods_count: u32,
+    mods_addr: u32,
 
     // The section header table for ELF
-    pub elf_sec: ElfSectionHeaderTable,
+    elf_sec: ElfSectionHeaderTable,
 
     // Memory Mapping buffer
-    pub mmap_length: u32,
-    pub mmap_addr: u32,
+    mmap_length: u32,
+    mmap_addr: u32,
 
     // Drive Info buffe
-    pub drives_length: u32,
-    pub drives_addr: u32,
+    drives_length: u32,
+    drives_addr: u32,
 
     // ROM configuration table
-    pub config_table: u32,
+    config_table: u32,
 
     // Boot Loader Name
-    pub boot_loader_name: u32,
+    boot_loader_name: u32,
 
     // APM table
-    pub apm_table: u32,
+    apm_table: u32,
 
     // Video
-    pub vbe_control_info: u32,
-    pub vbe_mode_info: u32,
-    pub vbe_mode: u16,
-    pub vbe_interface_seg: u16,
-    pub vbe_interface_off: u16,
-    pub vbe_interface_len: u16,
+    vbe_control_info: u32,
+    vbe_mode_info: u32,
+    vbe_mode: u16,
+    vbe_interface_seg: u16,
+    vbe_interface_off: u16,
+    vbe_interface_len: u16,
 }
 
 const HEADER_FLAGS: u32 = HEADER_MEMORY_INFO;
@@ -108,6 +108,6 @@ static MULTIBOOT_HEADER: Header = Header {
     depth: 0
 };
 
-pub fn init(magic: u32, info_ptr: usize) {
+pub unsafe fn init(magic: u32, info_ptr: usize) {
 
 }

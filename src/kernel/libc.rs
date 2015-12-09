@@ -23,6 +23,17 @@ pub unsafe extern fn memset(ptr: *mut (), value: i32, num: usize) -> *mut () {
     ptr
 }
 
+#[no_mangle]
+pub unsafe extern fn strlen(str: *const u8) -> usize {
+    let mut len = 0;
+    let mut ptr = str;
+    while *ptr != 0 {
+        len += 1;
+        ptr = ptr.offset(1);
+    }
+    len
+}
+
 macro_rules! dummy_syms {
     ($($sym:ident)*) => ($(
         #[no_mangle]

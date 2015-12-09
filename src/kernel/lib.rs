@@ -3,7 +3,7 @@
 #![no_std]
 
 #[macro_use]
-pub mod klog;
+pub mod macros;
 
 #[cfg(arch_x86_64)]
 #[path = "arch-x86_64/mod.rs"]
@@ -13,8 +13,10 @@ pub mod arch;
 pub mod arch;
 
 pub mod config;
+pub mod klog;
 pub mod libc;
 pub mod memory;
+pub mod util;
 
 #[no_mangle]
 #[lang = "begin_unwind"]

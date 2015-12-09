@@ -12,7 +12,7 @@ fn write(s: &str) {
 
 #[no_mangle]
 #[linkage="external"]
-pub extern fn __boot(magic: u32, info_ptr: usize) {
+pub unsafe extern fn __boot(magic: u32, info_ptr: usize) {
     klog::init(write, klog::Level::Debug);
     multiboot::init(magic, info_ptr);
     klog_debug!("ok");

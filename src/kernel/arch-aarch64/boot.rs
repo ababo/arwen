@@ -13,8 +13,11 @@ fn write(s: &str) {
 const DEVICE_TREE_PTR: usize = 0x4000_0000;
 
 #[no_mangle]
-pub extern fn __boot() {
+pub unsafe extern fn __boot() {
 	klog::init(write, klog::Level::Debug);
 	device_tree::init(DEVICE_TREE_PTR);
-    klog_debug!("ok");
+
+    for token in device_tree::Iter::new() {
+        klog_debug!("token: {:?}", token);
+    }
 }
