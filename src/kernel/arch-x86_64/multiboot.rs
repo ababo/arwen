@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // The magic field should contain this.
 const HEADER_MAGIC: u32 = 0x1BADB002;
 
@@ -108,6 +110,9 @@ static MULTIBOOT_HEADER: Header = Header {
     depth: 0
 };
 
-pub unsafe fn init(magic: u32, info_ptr: usize) {
+pub unsafe fn init(magic: u32, _info_ptr: usize) {
+    if magic != BOOTLOADER_MAGIC {
+        panic!("bad multiboot magic");
+    }
 
 }

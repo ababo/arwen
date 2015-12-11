@@ -36,6 +36,7 @@ pub unsafe fn init(header_ptr: usize) {
     HEADER = Some(transmute(header_ptr));
 }
 
+#[derive(Clone, Copy)]
 pub struct Iter {
     ptr: *const u32
 }
@@ -101,5 +102,123 @@ impl Iterator for Iter {
                 _ => panic!("bad device tree token")
             }
         }
+    }
+}
+
+pub struct PathIter<'a> {
+    iter: Iter,
+    path: &'a str,
+    ignore_addr: bool,
+    component: &'a str
+}
+
+impl<'a> PathIter<'a> {
+    fn discard_addr<'b>(name: &'b str) -> &'b str {
+        name.split('@').next().unwrap()
+    }
+
+    fn first_component(path: &'a str) -> &'a str {
+        path.split('/').next().unwrap()
+    }
+
+    fn component_offset(&self) -> usize {
+        let addr1 = self.component.as_ptr() as usize;
+        let addr2 = self.path.as_ptr() as usize;
+        addr1 - addr2
+    }
+
+    fn advance_component<I>(&self, mut split: I) -> Option<&'a str>
+        where I: Iterator<Item = &'a str> {
+        split.next().unwrap();
+        match split.next() {
+            Some(next) => Some(next),
+            None => None
+        }
+    }
+
+    fn next_component(&self) -> Option<&'a str> {
+        let from = self.component_offset() + self.component.len();
+        self.advance_component((&self.path[from..]).split('/'))
+    }
+
+    fn prev_component(&self) -> Option<&'a str> {
+        let to = self.component_offset();
+        self.advance_component((&self.path[..to]).rsplit('/'))
+    }
+
+    pub fn new(iter: Iter, path: &'a str, ignore_addr: bool) -> PathIter<'a> {
+        PathIter{
+            iter: iter,
+            path: path,
+            ignore_addr: ignore_addr,
+            component: Self::first_component(path)
+        }
+    }
+
+    fn skip_node(&mut self) {
+        let mut level = 1;
+        while let Some(token) = self.iter.next() {
+            match token {
+                Token::BeginNode{name:_} => {
+                    level += 1;
+                },
+                Token::EndNode => {
+                    level -= 1;
+                    if level == 0 {
+                        break;
+                    }
+                },
+                _ => {}
+            }
+        }
+    }
+}
+
+impl<'a> Iterator for PathIter<'a> {
+    type Item = Iter;
+
+    // TODO: remove `as_bytes()` in string
+    // comparisons when compiler will stop crashing
+    fn next(&mut self) -> Option<Iter> {
+        let mut prev = self.iter.clone();
+        while let Some(token) = self.iter.next() {
+            match token {
+                Token::BeginNode{mut name} => {
+                    if self.ignore_addr { name = Self::discard_addr(name); }
+                    if name.as_bytes() == self.component.as_bytes() {
+                        match self.next_component() {
+                            Some(comp) => {
+                                self.component = comp;
+                            },
+                            None => {
+                                self.skip_node();
+                                return Some(prev);
+                            }
+                        }
+                    } else {
+                        self.skip_node();
+                    }
+                },
+                Token::EndNode => {
+                    match self.prev_component() {
+                        Some(comp) => {
+                            self.component = comp;
+                        },
+                        None => {
+                            return None;
+                        }
+                    }
+                },
+                Token::Property{name, value:_} => {
+                    if self.next_component().is_none() &&
+                        name.as_bytes() == self.component.as_bytes() {
+                            return Some(prev);
+                    }
+                },
+                _ => {}
+            };
+            prev = self.iter.clone();
+        }
+        None
     }
 }

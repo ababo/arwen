@@ -1,6 +1,6 @@
 	.set CPACR_EL1_FPEN, 0b11 << 20
 
-	.set BOOT_STACK_SIZE, 8 * 1024
+	.set BOOT_STACK_SIZE, 32 * 1024
 
 	.global __boot_stack
 	.global __start
