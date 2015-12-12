@@ -161,6 +161,10 @@ class Module:
             '--cfg arch_%s --sysroot /dev/null') % \
             (args.arch, args.level, args.arch)
 
+        # TODO: remove this in future (see issue #1)
+        if args.arch == 'x86_64':
+            flags += ' -C relocation-model=static'
+
         lib_path = ' -L ' + ' -L '.join(
             map(lambda d: os.path.dirname(d), self.dependencies)) \
             if self.dependencies else ''

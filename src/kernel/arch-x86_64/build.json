@@ -1,5 +1,4 @@
 {
     "asmFiles": [ "start.s" ],
-	"rustFiles": [ "mod.rs", "boot.rs", "multiboot.rs" ],
-	"rustArgs": [ "-C relocation-model=static" ]
+	"rustFiles": [ "mod.rs", "boot.rs", "multiboot.rs" ]
 }
