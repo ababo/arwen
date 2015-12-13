@@ -1,1 +1,1 @@
-pub const MEMORY_SEGMENTS_MAX: usize = 8;
+pub const MEMORY_REGIONS_MAX: usize = 8;

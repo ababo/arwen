@@ -4,9 +4,11 @@ ENTRY(__start)
 
 SECTIONS {
     . = 1024M + 64K /* dtb */;
-	.header : {
-		*(.header);
-	}
+    .header : {
+        *(.header);
+        __kbaddr = LOADADDR(.header);
+        __keaddr = LOADADDR(.bss) + SIZEOF(.bss);
+    }
     .text : {
         *(.text);
     }

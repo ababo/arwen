@@ -1,7 +1,8 @@
+#![allow(dead_code)]
+
 use arch::multiboot;
 use klog;
 
-#[allow(dead_code)]
 fn write(s: &str) {
     let port = 0x400 as *const u16;
     for b in s.chars() {

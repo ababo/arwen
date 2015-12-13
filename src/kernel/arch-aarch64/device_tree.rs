@@ -1,8 +1,9 @@
 use core::iter::Iterator;
-use core::mem::transmute;
+use core::mem::{size_of, transmute};
 use core::slice::from_raw_parts;
 use core::str::from_utf8;
 use libc::strlen;
+use memory;
 
 #[repr(C)]
 struct Header {
@@ -34,6 +35,14 @@ pub unsafe fn init(header_ptr: usize) {
         panic!("bad device tree magic");
     }
     HEADER = Some(transmute(header_ptr));
+}
+
+pub fn device_tree_memory_region() -> memory::MemoryRegion {
+    unsafe {
+        let addr: usize = transmute(HEADER.unwrap());
+        let size = u32::from_be(HEADER.unwrap().total_size) as usize;
+        memory::MemoryRegion{address:addr, size:size}
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -221,4 +230,38 @@ impl<'a> Iterator for PathIter<'a> {
         }
         None
     }
+}
+
+#[repr(C)]
+pub struct MemoryRegion {
+    address_be: u64,
+    size_be: u64
+}
+
+impl MemoryRegion {
+    pub fn address(&self) -> u64 { u64::from_be(self.address_be) }
+    pub fn size(&self) -> u64 { u64::from_be(self.size_be) }
+}
+
+pub fn reserved_memory() -> &'static [MemoryRegion] {
+    unsafe {
+        let addr: usize = transmute(HEADER.unwrap());
+        let off = u32::from_be(HEADER.unwrap().off_mem_rsvmap) as usize;
+        let ptr: *const MemoryRegion = transmute(addr+off);
+
+        let mut cur = ptr;
+        while (*cur).address_be != 0 || (*cur).size_be != 0 {
+            cur = cur.offset(1);
+        }
+
+        let len = (cur as usize - ptr as usize) / size_of::<MemoryRegion>();
+        from_raw_parts(ptr, len)
+    }
+}
+
+pub fn to_memory_regions<'a>(value: &'a [u8]) -> &'a [MemoryRegion] {
+    assert!(value.len() % size_of::<MemoryRegion>() == 0,
+        "bad memory regions value of device tree property");
+    let len = value.len() / size_of::<MemoryRegion>();
+    unsafe { from_raw_parts(transmute(value.as_ptr()), len) }
 }

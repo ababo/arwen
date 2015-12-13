@@ -1,5 +1,5 @@
 #![crate_name = "kernel"]
-#![feature(asm, lang_items, linkage)]
+#![feature(asm, lang_items, linkage, core_intrinsics)]
 #![no_std]
 
 #[macro_use]
@@ -22,8 +22,8 @@ pub mod util;
 #[lang = "begin_unwind"]
 pub extern fn rust_begin_unwind(args: core::fmt::Arguments,
                                 file: &'static str, line: usize) -> ! {
-	klog::log(klog::Level::Fatal,
-		format_args!("panic: {} ({}:{})", args, file, line));
-	extern { fn __halt() -> !; }
+    klog::log(klog::Level::Fatal,
+        format_args!("panic: {} ({}:{})", args, file, line));
+    extern { fn __halt() -> !; }
     unsafe { __halt(); }
 }

@@ -1,34 +1,33 @@
-use config::MEMORY_SEGMENTS_MAX;
+use config::MEMORY_REGIONS_MAX;
 
-#[derive(Clone, Copy)]
-pub enum SegmentKind {
-    Unknown = 0,
-    Regular = 1,
-    Reserved = 2,
-}
-
-#[derive(Clone, Copy)]
-pub struct Segment {
-    pub kind: SegmentKind,
-    pub addr: usize,
+#[derive(Clone, Copy, Debug)]
+pub struct MemoryRegion {
+    pub address: usize,
     pub size: usize
 }
 
-pub struct MemoryMap {
-    segment_count: usize,
-    segments: [Segment; MEMORY_SEGMENTS_MAX]
+static mut AVAILABLE_BUF: [MemoryRegion; MEMORY_REGIONS_MAX] =
+    [MemoryRegion{address:0, size:0}; MEMORY_REGIONS_MAX];
+static mut AVAILABLE: &'static [MemoryRegion] =
+    &[MemoryRegion{address:0, size:0}; 0];
+
+unsafe fn set_available_memory(available: &[MemoryRegion]) {
+    let mut iter = available.iter();
+    if let Some(mut prev) = iter.next() {
+        for cur in iter {
+            assert!(cur.address >= prev.address + prev.size,
+                "available memory regions are overlapping or non-sorted");
+            prev = cur;
+        }
+    }
+
+    for (to, from) in AVAILABLE_BUF.iter_mut().zip(available.iter()) {
+        *to = *from
+    }
+    AVAILABLE = &AVAILABLE_BUF[..available.len()];
 }
 
-static mut MEMORY_MAP: MemoryMap = MemoryMap {
-    segment_count: 0,
-    segments: [Segment{kind: SegmentKind::Unknown, addr: 0, size: 0};
-               MEMORY_SEGMENTS_MAX]
-};
-
-pub unsafe fn memory_map_mut() -> &'static mut MemoryMap {
-    &mut MEMORY_MAP
-}
-
-pub fn memory_map() -> &'static MemoryMap {
-    unsafe { &MEMORY_MAP }
+pub unsafe fn init(available: &[MemoryRegion]) {
+    set_available_memory(available);
+    klog_debug!("available memory: {:?}", available);
 }

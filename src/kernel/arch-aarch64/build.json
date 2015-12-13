@@ -1,4 +1,4 @@
 {
     "asmFiles": [ "start.s" ],
-	"rustFiles": [ "mod.rs", "boot.rs", "device_tree.rs" ]
+    "rustFiles": [ "mod.rs", "boot.rs", "device_tree.rs" ]
 }

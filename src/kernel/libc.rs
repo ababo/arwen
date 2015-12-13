@@ -1,3 +1,5 @@
+use core::intrinsics::volatile_store;
+
 #[no_mangle]
 pub unsafe extern fn memcmp(ptr1: *const (), ptr2: *const (),
                             num: usize) -> i32 {
@@ -21,7 +23,7 @@ pub unsafe extern fn memcpy(dst: *mut (), src: *const (),
     let mut curs = src as *mut u8;
     let endd = curd.offset(num as isize);
     while curd < endd {
-        *curd = *curs;
+        volatile_store(curd, *curs);
         curd = curd.offset(1);
         curs = curs.offset(1);
     }
@@ -33,7 +35,7 @@ pub unsafe extern fn memset(ptr: *mut (), value: i32, num: usize) -> *mut () {
     let mut cur = ptr as *mut u8;
     let end = cur.offset(num as isize);
     while cur < end {
-        *cur = value as u8;
+        volatile_store(cur, value as u8);
         cur = cur.offset(1);
     }
     ptr
