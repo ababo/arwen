@@ -1,8 +1,8 @@
-#![allow(dead_code)]
-
+use arch::memory;
 use arch::multiboot;
 use klog;
 
+// TODO: replace with a proper serial port handling code
 fn write(s: &str) {
     let port = 0x400 as *const u16;
     for b in s.chars() {
@@ -13,10 +13,8 @@ fn write(s: &str) {
 }
 
 #[no_mangle]
-#[linkage="external"]
-#[allow(private_no_mangle_fns)]
-unsafe extern fn __boot(magic: u32, info_ptr: usize) {
+pub unsafe extern fn __boot(magic: u32, info_ptr: usize) {
     klog::init(write, klog::Level::Debug);
     multiboot::init(magic, info_ptr);
-    klog_debug!("ok");
+    memory::init();
 }

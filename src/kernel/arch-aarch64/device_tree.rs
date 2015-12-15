@@ -1,4 +1,3 @@
-use core::iter::Iterator;
 use core::mem::{size_of, transmute};
 use core::slice::from_raw_parts;
 use core::str::from_utf8;

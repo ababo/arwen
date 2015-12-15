@@ -29,5 +29,18 @@ unsafe fn set_available_memory(available: &[MemoryRegion]) {
 
 pub unsafe fn init(available: &[MemoryRegion]) {
     set_available_memory(available);
-    klog_debug!("available memory: {:?}", available);
+    for region in available {
+        klog_debug!("available memory: {}KiB from 0x{:X}",
+            region.size/1024, region.address);
+    }
+}
+
+pub fn kernel_memory_region() -> MemoryRegion {
+    extern {
+        static __kbaddr: usize;
+        static __keaddr: usize;
+    }
+    let kbaddr = &__kbaddr as *const usize as usize;
+    let keaddr = &__keaddr as *const usize as usize;
+    MemoryRegion{address:kbaddr, size:(keaddr-kbaddr)}
 }

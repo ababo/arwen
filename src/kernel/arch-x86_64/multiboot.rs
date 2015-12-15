@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use core::mem::transmute;
+
 // The magic field should contain this.
 const HEADER_MAGIC: u32 = 0x1BADB002;
 
@@ -8,6 +10,9 @@ const HEADER_MEMORY_INFO: u32 = 0x00000002;
 
 // This should be in %eax.
 const BOOTLOADER_MAGIC: u32 = 0x2BADB002;
+
+// Is there a full memory map?
+const INFO_MEMORY_MAP: u32 = 0x00000040;
 
 #[repr(C)]
 struct Header {
@@ -43,14 +48,13 @@ struct ElfSectionHeaderTable {
     shndx : u32,
 }
 
-#[repr(C)]
+#[repr(packed)]
 struct Info {
     // Multiboot info version number
     flags: u32,
 
     // Available memory from BIOS
-    mem_lower: u32,
-    mem_upper: u32,
+    memory: u64,
 
     // "root" partition
     boot_device: u32,
@@ -110,9 +114,54 @@ static MULTIBOOT_HEADER: Header = Header {
     depth: 0
 };
 
-pub unsafe fn init(magic: u32, _info_ptr: usize) {
+static mut INFO: Option<*const Info> = None;
+
+pub unsafe fn init(magic: u32, info_ptr: usize) {
     if magic != BOOTLOADER_MAGIC {
         panic!("bad multiboot magic");
     }
+    INFO = Some(info_ptr as *const Info);
+    if (*INFO.unwrap()).flags & INFO_MEMORY_MAP == 0 {
+        panic!("no memory map in multiboot info");
+    }
+}
 
+pub const MEM_KIND_AVAILABLE: u32 = 1;
+
+#[repr(packed)]
+#[derive(Clone, Copy, Debug)]
+pub struct MemoryRegion {
+    size: u32,
+    pub base_addr: u64,
+    pub length: u64,
+    pub kind: u32
+}
+
+pub struct MemoryMapIter {
+    ptr: usize
+}
+
+impl MemoryMapIter {
+    pub fn new() -> MemoryMapIter {
+        unsafe { MemoryMapIter{ptr: (*INFO.unwrap()).mmap_addr as usize} }
+    }
+}
+
+impl Iterator for MemoryMapIter {
+    type Item = MemoryRegion;
+
+    fn next(&mut self) -> Option<MemoryRegion> {
+        unsafe {
+            let mmap_ptr = (*INFO.unwrap()).mmap_addr as usize;
+            let mmap_len = (*INFO.unwrap()).mmap_length as usize;
+
+            if self.ptr >= mmap_ptr + mmap_len {
+                return None;
+            }
+
+            let reg: *const MemoryRegion = transmute(self.ptr);
+            self.ptr += 4 + (*reg).size as usize;
+            Some(*reg)
+        }
+    }
 }
