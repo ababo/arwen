@@ -17,17 +17,19 @@ It can be done easily in recent Linux versions just using a package manager. For
 The typical command to build and install binutils for aarch64:
 
 ```bash
-./configure --target aarch64-elf && make && sudo make install
+./configure --target aarch64-elf
+make && sudo make install
 ```
 
 #####3. Install QEMU for a chosen target (optional)
 
-This is fairly simple for x86_64 target (just use your packet manager, e.g. apt, yum, macports, ...), but is still more complicated for aarch64 (you need a QEMU version 2.2 or higher). In the second case you'll probably need to build it from the recent [sources](http://wiki.qemu.org/Download).
+This is fairly simple for x86_64 target (just use your packet manager, e.g. apt, yum, macports, ...), but it can be more complicated for aarch64 on older hosts (you need a QEMU version 2.2 or higher). But you can always build it from the recent [sources](http://wiki.qemu.org/Download).
 
 The typical command to build and install QEMU for aarch64:
 
 ```bash
-./configure --target-list=aarch64-softmmu --enable-system --disable-user && make && sudo make install
+./configure --target-list=aarch64-softmmu --enable-system --disable-user
+make && sudo make install
 ```
 
 #####4. Build Arwen OS
@@ -36,10 +38,12 @@ Clone the Arwen OS repository and its submodules:
 
 ```bash
 git clone https://github.com/ababo/arwen.git
-cd arwen && git submodule init && git submodule update
+cd arwen
+git submodule init && git submodule update
+git submodule foreach git pull origin master
 ```
 
-Then configure build using the included Python script. It takes several parameters. The most important ones are 'arch' and 'prefix'. For example, you need to build for aarch64 CPU target architecture using binutils which prefixed with 'aarch64-linux-gnu-'. To configure such build run:
+Then configure build using the included Python script. It takes several parameters. The most important ones are 'arch' and 'prefix'. For example, you need to build for aarch64 CPU target architecture using binutils which are prefixed with 'aarch64-linux-gnu-'. To configure such build run:
 
 ```bash
 ./configure.py --arch aarch64 --prefix aarch64-linux-gnu-

@@ -19,9 +19,9 @@ pub mod memory;
 pub mod util;
 
 #[no_mangle]
-#[lang = "begin_unwind"]
-pub extern fn rust_begin_unwind(args: core::fmt::Arguments,
-                                file: &'static str, line: usize) -> ! {
+#[lang = "panic_fmt"]
+pub extern fn panic_fmt(args: core::fmt::Arguments,
+                        file: &'static str, line: usize) -> ! {
     klog::log(klog::Level::Fatal,
         format_args!("panic: {} ({}:{})", args, file, line));
     extern { fn __halt() -> !; }
